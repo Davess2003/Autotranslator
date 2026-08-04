@@ -239,3 +239,5 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 Copyright © 2021 [thedaviddelta](https://github.com/thedaviddelta) & contributors.  
 This project is [GNU AGPLv3](./LICENSE) licensed.
+#   A u t o t r a n s l a t o r  
+ 
