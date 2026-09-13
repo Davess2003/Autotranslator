@@ -1,18 +1,13 @@
 import { NextApiHandler } from "next";
 import NextCors from "nextjs-cors";
-import { getTranslationInfo, getTranslationText, getAudio, isValidCode, LanguageType, TranslationInfo } from "lingva-scraper";
 
 type Data = {
     translation: string,
-    info?: TranslationInfo
-} | {
-    audio: number[]
 } | {
     error: string
 };
 
 const methods = ["GET"];
-
 const handler: NextApiHandler<Data> = async (req, res) => {
     await NextCors(req, res, {
         methods,
@@ -33,31 +28,24 @@ const handler: NextApiHandler<Data> = async (req, res) => {
         return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    const [source, target, query] = slug;
+    const [source, target, text] = slug;
 
-    if (!isValidCode(target, LanguageType.TARGET))
-        return res.status(400).json({ error: "Invalid target language" });
+    try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
 
-    if (source === "audio") {
-        const audio = await getAudio(target, query);
-        return audio
-            ? res.status(200).json({ audio })
-            : res.status(500).json({ error: "An error occurred while retrieving the audio" });
-    }
+        if (!response.ok) {
+            return res.status(500).json({ error: "Translation service error" });
+        }
 
-    if (!isValidCode(source, LanguageType.SOURCE))
-        return res.status(400).json({ error: "Invalid source language" });
-
-    const translation = await getTranslationText(source, target, query);
-
-    if (!translation)
+        const data = await response.json();
+        if (data.responseStatus === 200) {
+            return res.status(200).json({ translation: data.responseData.translatedText });
+        } else {
+            return res.status(500).json({ error: "Translation failed" });
+        }
+    } catch (error) {
         return res.status(500).json({ error: "An error occurred while retrieving the translation" });
-
-    const info = await getTranslationInfo(source, target, query);
-
-    return info
-        ? res.status(200).json({ translation, info })
-        : res.status(200).json({ translation });
+    }
 }
 
 export default handler;
